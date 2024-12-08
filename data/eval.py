@@ -34,11 +34,11 @@ def eval(agent: agent.ChessAgent, use_test=False) -> float:
 
 def run_eval():
     # model = agent.StockfishAgent()
-    model = search_agents.MinimaxAgent(
+    model = search_agents.AlphaBetaAgent(
         evaluator=search_agents.StockfishEvaluator(
             limit=chess.engine.Limit(time=0.05, depth=1)
         ),
-        move_depth_limit=1,
+        move_depth_limit=3,
     )
     eval(model)
     model.quit()

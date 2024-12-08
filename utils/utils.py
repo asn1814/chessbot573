@@ -1,4 +1,5 @@
 import chess
+import chess.engine
 import numpy as np
 
 
@@ -9,6 +10,16 @@ class State:
         except:
             print(f"Exception on {fen}")
         self.board_rep: np.ndarray = fen_to_matrix(fen.split()[0])
+
+def score_to_float(score: chess.engine.PovScore) -> float:
+    if score is None:
+        return 0
+    if score.is_mate():
+        if score.turn is chess.WHITE:
+            return float('inf')
+        else:
+            return float('-inf')
+    return float(score.relative.score())
 
 
 def fen_to_matrix(fen: str, reshape: bool = False, debug: bool = False) -> np.ndarray:

@@ -6,7 +6,7 @@ import chess.engine
 
 import constants
 from agents.agent import ChessAgent
-from utils.utils import State
+from utils.utils import State, score_to_float
 
 
 class ChessEvaluator:
@@ -110,6 +110,93 @@ class MinimaxAgent(ChessAgent):
             centipawns, move = self.max_value(state, self.limit.depth)
         else:
             centipawns, move = self.min_value(state, self.limit.depth)
+        return move
+
+    def quit(self) -> None:
+        self.evaluator.quit()
+
+
+class AlphaBetaAgent(ChessAgent):
+    def __init__(
+        self,
+        evaluator: ChessEvaluator,
+        move_time_limit: float = 0.1,
+        move_depth_limit: int = 20,
+    ):
+        super().__init__(move_time_limit, move_depth_limit)
+        self.evaluator = evaluator
+
+    def max_value(
+        self, state: State, depth: int, alpha: float, beta: float
+    ) -> tuple[chess.engine.PovScore, chess.Move]:
+        # check for terminal state
+        if state.board.is_game_over() or depth <= 0:
+            return self.evaluator.getEvaluation(state), None
+
+        # update depth
+        depth -= 1
+
+        # Collect legal moves and successor states
+        legalMoves = state.board.generate_legal_moves()
+
+        # Choose one of the best actions
+        scores: list[float] = []
+        moves = []
+        for action in legalMoves:
+            moves.append(action)
+            state.board.push(action)
+            score, move = self.min_value(state, depth, alpha, beta)
+            state.board.pop()
+            scores.append(score_to_float(score))
+            if score_to_float(score) > beta:
+                break
+            alpha = max(alpha, max(scores))
+        bestScore: chess.engine.Score = max(scores)
+        bestIndices = [
+            index for index in range(len(scores)) if scores[index] == bestScore
+        ]
+        chosenIndex = bestIndices[0]
+
+        return chess.engine.PovScore(chess.engine.Cp(bestScore), chess.WHITE), moves[chosenIndex]
+
+    def min_value(
+        self, state: State, depth: int, alpha: float, beta: float
+    ) -> tuple[chess.engine.PovScore, chess.Move]:
+        # check for terminal state
+        if state.board.is_game_over() or depth <= 0:
+            return self.evaluator.getEvaluation(state), None
+
+        # update depth
+        depth -= 1
+
+        # Collect legal moves and successor states
+        legalMoves = state.board.generate_legal_moves()
+
+        # Choose one of the best actions
+        scores = []
+        moves = []
+        for action in legalMoves:
+            moves.append(action)
+            state.board.push(action)
+            score, move = self.max_value(state, depth, alpha, beta)
+            state.board.pop()
+            scores.append(score_to_float(score))
+            if score_to_float(score) < alpha:
+                break
+            beta = min(beta, min(scores))
+        bestScore: chess.engine.Score = min(scores)
+        bestIndices = [
+            index for index in range(len(scores)) if scores[index] == bestScore
+        ]
+        chosenIndex = bestIndices[0]
+
+        return chess.engine.PovScore(chess.engine.Cp(bestScore), chess.BLACK), moves[chosenIndex]
+
+    def getMove(self, state) -> Union[chess.Move, None]:
+        if state.board.turn is chess.WHITE:
+            centipawns, move = self.max_value(state, self.limit.depth, float('-inf'), float('inf'))
+        else:
+            centipawns, move = self.min_value(state, self.limit.depth, float('-inf'), float('inf'))
         return move
 
     def quit(self) -> None:
