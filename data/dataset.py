@@ -1,10 +1,11 @@
 import csv
+import random
 
 import fire
 import kagglehub
 
-import random
 import constants
+
 
 def get_data():
     # Download latest version
