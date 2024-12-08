@@ -1,12 +1,15 @@
-import agents.agent as agent
-from data.dataset import get_splits
-import paths
-from utils.utils import State
-import fire
-from tqdm import tqdm
 import asyncio
 
-def eval(agent: agent.ChessAgent, use_test = False) -> float:
+import fire
+from tqdm import tqdm
+
+import agents.agent as agent
+import paths
+from data.dataset import get_splits
+from utils.utils import State
+
+
+def eval(agent: agent.ChessAgent, use_test=False) -> float:
     print("Getting splits")
     train, val, test = get_splits(paths.TACTICS_DATA_ALL)
     eval = val
@@ -32,6 +35,7 @@ def eval(agent: agent.ChessAgent, use_test = False) -> float:
 def run_eval():
     model = agent.StockFishAgent()
     eval(model)
+
 
 if __name__ == "__main__":
     fire.Fire(run_eval)

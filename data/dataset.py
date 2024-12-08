@@ -24,7 +24,7 @@ class PositionDataPoint:
 
 
 def get_splits(
-    path: str
+    path: str,
 ) -> tuple[list[PositionDataPoint], list[PositionDataPoint], list[PositionDataPoint]]:
     """Gets train, val, and test splits
 
@@ -39,13 +39,13 @@ def get_splits(
     data = []
     with open(path, "r") as f:
         reader = csv.reader(f)
-        next(reader, None) # skip header
+        next(reader, None)  # skip header
         for row in reader:
             data.append(PositionDataPoint(row[0], row[1], row[2]))
 
     if val_size + test_size > len(data):
         raise ValueError
-    
+
     return (
         data[val_size + test_size :],
         data[:val_size],
