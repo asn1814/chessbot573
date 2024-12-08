@@ -1,11 +1,10 @@
-import asyncio
 from abc import ABC, abstractmethod
 from typing import Union
 
 import chess
 import chess.engine
 
-import paths
+import constants
 from utils.utils import State
 
 
@@ -19,17 +18,20 @@ class ChessAgent(ABC):
     @abstractmethod
     def getMove(self, state: State) -> Union[chess.Move, None]:
         raise NotImplementedError
+    
+    @abstractmethod
+    def quit(self) -> None:
+        raise NotImplementedError
 
 
 class StockFishAgent(ChessAgent):
     def __init__(self):
         super().__init__()
-        self.transport, self.engine = asyncio.run(self.__ainit__())
+        self.engine = chess.engine.SimpleEngine.popen_uci(constants.STOCKFISH_PATH)
 
-    async def __ainit__(self):
-        return await chess.engine.popen_uci(paths.STOCKFISH_PATH)
-
-    async def getMove(self, state) -> Union[chess.Move, None]:
-        self.transport, self.engine = await chess.engine.popen_uci(paths.STOCKFISH_PATH)
-        result = await self.engine.play(state.board, self.limit)
+    def getMove(self, state) -> Union[chess.Move, None]:
+        result = self.engine.play(state.board, self.limit)
         return result.move
+    
+    def quit(self) -> None:
+        self.engine.quit()

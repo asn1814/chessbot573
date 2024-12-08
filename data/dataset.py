@@ -3,6 +3,8 @@ import csv
 import fire
 import kagglehub
 
+import random
+import constants
 
 def get_data():
     # Download latest version
@@ -45,6 +47,9 @@ def get_splits(
 
     if val_size + test_size > len(data):
         raise ValueError
+
+    random.seed(constants.SEED)
+    random.shuffle(data)
 
     return (
         data[val_size + test_size :],

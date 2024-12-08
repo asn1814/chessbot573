@@ -4,14 +4,14 @@ import fire
 from tqdm import tqdm
 
 import agents.agent as agent
-import paths
+import constants
 from data.dataset import get_splits
 from utils.utils import State
 
 
 def eval(agent: agent.ChessAgent, use_test=False) -> float:
     print("Getting splits")
-    train, val, test = get_splits(paths.TACTICS_DATA_ALL)
+    train, val, test = get_splits(constants.TACTICS_DATA_ALL)
     eval = val
     if use_test:
         eval = test
@@ -20,7 +20,7 @@ def eval(agent: agent.ChessAgent, use_test=False) -> float:
     correct = 0
     total = 0
     for data in tqdm(eval, "Evaluating"):
-        move = asyncio.run(agent.getMove(State(data.fen)))
+        move = agent.getMove(State(data.fen))
         if move is None:
             uci = "None"
         else:
@@ -35,6 +35,7 @@ def eval(agent: agent.ChessAgent, use_test=False) -> float:
 def run_eval():
     model = agent.StockFishAgent()
     eval(model)
+    model.quit()
 
 
 if __name__ == "__main__":

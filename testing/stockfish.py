@@ -3,11 +3,11 @@ import asyncio
 import chess
 import chess.engine
 
-import paths
+import constants
 
 
 async def main() -> None:
-    transport, engine = await chess.engine.popen_uci(paths.STOCKFISH_PATH)
+    transport, engine = await chess.engine.popen_uci(constants.STOCKFISH_PATH)
 
     board = chess.Board()
     info = await engine.analyse(board, chess.engine.Limit(time=0.1))
