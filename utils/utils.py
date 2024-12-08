@@ -3,8 +3,11 @@ from typing import Literal
 import chess
 
 class State: 
-  def init(self, fen: str):
-    self.board: chess.Board = chess.Board(fen)
+  def __init__(self, fen: str):
+    try:
+      self.board: chess.Board = chess.Board(fen)
+    except:
+      print(f"Exception on {fen}") 
     self.board_rep: np.ndarray = fen_to_matrix(fen.split()[0])
   
 def fen_to_matrix(fen: str, reshape: bool = False, debug: bool = False) -> np.ndarray:
