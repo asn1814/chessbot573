@@ -157,7 +157,10 @@ class AlphaBetaAgent(ChessAgent):
         ]
         chosenIndex = bestIndices[0]
 
-        return chess.engine.PovScore(chess.engine.Cp(bestScore), chess.WHITE), moves[chosenIndex]
+        return (
+            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.WHITE),
+            moves[chosenIndex],
+        )
 
     def min_value(
         self, state: State, depth: int, alpha: float, beta: float
@@ -190,13 +193,221 @@ class AlphaBetaAgent(ChessAgent):
         ]
         chosenIndex = bestIndices[0]
 
-        return chess.engine.PovScore(chess.engine.Cp(bestScore), chess.BLACK), moves[chosenIndex]
+        return (
+            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.BLACK),
+            moves[chosenIndex],
+        )
 
     def getMove(self, state) -> Union[chess.Move, None]:
         if state.board.turn is chess.WHITE:
-            centipawns, move = self.max_value(state, self.limit.depth, float('-inf'), float('inf'))
+            centipawns, move = self.max_value(
+                state, self.limit.depth, float("-inf"), float("inf")
+            )
         else:
-            centipawns, move = self.min_value(state, self.limit.depth, float('-inf'), float('inf'))
+            centipawns, move = self.min_value(
+                state, self.limit.depth, float("-inf"), float("inf")
+            )
+        return move
+
+    def quit(self) -> None:
+        self.evaluator.quit()
+
+
+class QuiescenceAgent(ChessAgent):
+    def __init__(
+        self,
+        evaluator: ChessEvaluator,
+        move_time_limit: float = 0.1,
+        move_depth_limit: int = 2,
+        quiescence_depth_limit: int = 10,
+    ):
+        super().__init__(move_time_limit, move_depth_limit)
+        self.evaluator = evaluator
+        self.quiescence_depth_limit = quiescence_depth_limit
+
+    def max_value(
+        self, state: State, depth: int, alpha: float, beta: float
+    ) -> tuple[chess.engine.PovScore, chess.Move]:
+        # check for terminal state
+        if state.board.is_game_over():
+            return self.evaluator.getEvaluation(state), None
+        if depth <= 0:
+            quiescence_score, _ = self.quiescence_max_value(
+                state, self.quiescence_depth_limit, float("-inf"), float("inf")
+            )
+            curr_score = self.evaluator.getEvaluation(state)
+            if quiescence_score.relative <= curr_score.relative:
+                return curr_score, None
+            else:
+                return quiescence_score, None
+
+        # update depth
+        depth -= 1
+
+        # Collect legal moves and successor states
+        legalMoves = state.board.generate_legal_moves()
+
+        # Choose one of the best actions
+        scores: list[float] = []
+        moves = []
+        for action in legalMoves:
+            moves.append(action)
+            state.board.push(action)
+            score, move = self.min_value(state, depth, alpha, beta)
+            state.board.pop()
+            scores.append(score_to_float(score))
+            if score_to_float(score) > beta:
+                break
+            alpha = max(alpha, max(scores))
+        bestScore: chess.engine.Score = max(scores)
+        bestIndices = [
+            index for index in range(len(scores)) if scores[index] == bestScore
+        ]
+        chosenIndex = bestIndices[0]
+
+        return (
+            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.WHITE),
+            moves[chosenIndex],
+        )
+
+    def min_value(
+        self, state: State, depth: int, alpha: float, beta: float
+    ) -> tuple[chess.engine.PovScore, chess.Move]:
+        # check for terminal state
+        if state.board.is_game_over():
+            return self.evaluator.getEvaluation(state), None
+        if depth <= 0:
+            quiescence_score, _ = self.quiescence_min_value(
+                state, self.quiescence_depth_limit, float("-inf"), float("inf")
+            )
+            curr_score = self.evaluator.getEvaluation(state)
+            if quiescence_score.relative >= curr_score.relative:
+                return curr_score, None
+            else:
+                return quiescence_score, None
+
+        # update depth
+        depth -= 1
+
+        # Collect legal moves and successor states
+        legalMoves = state.board.generate_legal_moves()
+
+        # Choose one of the best actions
+        scores = []
+        moves = []
+        for action in legalMoves:
+            moves.append(action)
+            state.board.push(action)
+            score, move = self.max_value(state, depth, alpha, beta)
+            state.board.pop()
+            scores.append(score_to_float(score))
+            if score_to_float(score) < alpha:
+                break
+            beta = min(beta, min(scores))
+        bestScore: chess.engine.Score = min(scores)
+        bestIndices = [
+            index for index in range(len(scores)) if scores[index] == bestScore
+        ]
+        chosenIndex = bestIndices[0]
+
+        return (
+            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.BLACK),
+            moves[chosenIndex],
+        )
+
+    def quiescence_max_value(
+        self, state: State, depth: int, alpha: float, beta: float
+    ) -> tuple[chess.engine.PovScore, chess.Move]:
+        # check for terminal state
+        if state.board.is_game_over() or depth <= 0:
+            return self.evaluator.getEvaluation(state), None
+
+        # update depth
+        depth -= 1
+
+        # Collect legal moves and successor states
+        legalMoves = state.board.generate_legal_moves()
+        volatile_moves = []
+        for move in legalMoves:
+            if state.board.gives_check(move) or state.board.is_capture(move):
+                volatile_moves.append(move)
+        if len(volatile_moves) == 0:
+            return self.evaluator.getEvaluation(state), None
+
+        # Choose one of the best actions
+        scores: list[float] = []
+        moves = []
+        for action in volatile_moves:
+            moves.append(action)
+            state.board.push(action)
+            score, move = self.quiescence_min_value(state, depth, alpha, beta)
+            state.board.pop()
+            scores.append(score_to_float(score))
+            if score_to_float(score) > beta:
+                break
+            alpha = max(alpha, max(scores))
+        bestScore: chess.engine.Score = max(scores)
+        bestIndices = [
+            index for index in range(len(scores)) if scores[index] == bestScore
+        ]
+        chosenIndex = bestIndices[0]
+
+        return (
+            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.WHITE),
+            moves[chosenIndex],
+        )
+
+    def quiescence_min_value(
+        self, state: State, depth: int, alpha: float, beta: float
+    ) -> tuple[chess.engine.PovScore, chess.Move]:
+        # check for terminal state
+        if state.board.is_game_over() or depth <= 0:
+            return self.evaluator.getEvaluation(state), None
+
+        # update depth
+        depth -= 1
+
+        # Collect legal moves and successor states
+        legalMoves = state.board.generate_legal_moves()
+        volatile_moves = []
+        for move in legalMoves:
+            if state.board.gives_check(move) or state.board.is_capture(move):
+                volatile_moves.append(move)
+        if len(volatile_moves) == 0:
+            return self.evaluator.getEvaluation(state), None
+
+        # Choose one of the best actions
+        scores = []
+        moves = []
+        for action in volatile_moves:
+            moves.append(action)
+            state.board.push(action)
+            score, move = self.quiescence_max_value(state, depth, alpha, beta)
+            state.board.pop()
+            scores.append(score_to_float(score))
+            if score_to_float(score) < alpha:
+                break
+            beta = min(beta, min(scores))
+        bestScore: chess.engine.Score = min(scores)
+        bestIndices = [
+            index for index in range(len(scores)) if scores[index] == bestScore
+        ]
+        chosenIndex = bestIndices[0]
+
+        return (
+            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.BLACK),
+            moves[chosenIndex],
+        )
+
+    def getMove(self, state) -> Union[chess.Move, None]:
+        if state.board.turn is chess.WHITE:
+            centipawns, move = self.max_value(
+                state, self.limit.depth, float("-inf"), float("inf")
+            )
+        else:
+            centipawns, move = self.min_value(
+                state, self.limit.depth, float("-inf"), float("inf")
+            )
         return move
 
     def quit(self) -> None:
