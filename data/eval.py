@@ -1,4 +1,3 @@
-import chess.engine
 import fire
 from tqdm import tqdm
 
@@ -40,13 +39,17 @@ def run_eval():
         ),
         move_depth_limit=2,
     )"""
-    model = search_agents.QuiescenceAgent(
+    model = search_agents.AlphaBetaAgent(
+        evaluator=search_agents.SimpleEvaluator(),
+        move_depth_limit=2,
+    )
+    """model = search_agents.QuiescenceAgent(
         evaluator=search_agents.StockfishEvaluator(
             limit=chess.engine.Limit(time=0.05, depth=0)
         ),
         move_depth_limit=1,
         quiescence_depth_limit=2,
-    )
+    )"""
     eval(model)
     model.quit()
 

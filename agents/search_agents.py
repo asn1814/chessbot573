@@ -37,6 +37,47 @@ class StockfishEvaluator(ChessEvaluator):
         self.engine.quit()
 
 
+class SimpleEvaluator(ChessEvaluator):
+    VALUE_PAWN = 100
+    VALUE_KNIGHT = 310
+    VALUE_BISHOP = 320
+    VALUE_ROOK = 500
+    VALUE_QUEEN = 900
+
+    def __init__(self):
+        super().__init__()
+
+    def getEvaluation(self, state: State):
+        if state.board.is_checkmate():
+            return chess.engine.PovScore(
+                relative=chess.engine.MateGiven, turn=state.board.turn
+            )
+
+        fen: str = state.board.fen().split()[0]
+        if state.board.turn == chess.WHITE:
+            centipawns = 50.0
+        else:
+            centipawns = -50.0
+        centipawns += self.VALUE_PAWN * fen.count("P")
+        centipawns += self.VALUE_KNIGHT * fen.count("N")
+        centipawns += self.VALUE_BISHOP * fen.count("B")
+        centipawns += self.VALUE_ROOK * fen.count("R")
+        centipawns += self.VALUE_QUEEN * fen.count("Q")
+
+        centipawns -= self.VALUE_PAWN * fen.count("p")
+        centipawns -= self.VALUE_KNIGHT * fen.count("n")
+        centipawns -= self.VALUE_BISHOP * fen.count("b")
+        centipawns -= self.VALUE_ROOK * fen.count("r")
+        centipawns -= self.VALUE_QUEEN * fen.count("q")
+
+        return chess.engine.PovScore(
+            relative=chess.engine.Cp(centipawns), turn=state.board.turn
+        )
+
+    def quit(self):
+        return None
+
+
 class MinimaxAgent(ChessAgent):
     def __init__(
         self,

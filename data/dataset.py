@@ -37,8 +37,8 @@ def get_splits(
     Returns:
         tuple[list[PositionDataPoint], list[PositionDataPoint], list[PositionDataPoint]]: train, val, and test split in that order
     """
-    val_size = 100
-    test_size = 100
+    val_size = 500
+    test_size = 500
     data = []
     with open(path, "r") as f:
         reader = csv.reader(f)

@@ -9,7 +9,7 @@ class State:
             self.board: chess.Board = chess.Board(fen)
         except:
             print(f"Exception on {fen}")
-        self.board_rep: np.ndarray = fen_to_matrix(fen.split()[0])
+        # self.board_rep: np.ndarray = fen_to_matrix(fen.split()[0])
 
 
 def score_to_float(score: chess.engine.PovScore) -> float:
