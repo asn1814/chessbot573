@@ -1,12 +1,12 @@
-from abc import abstractmethod
 from typing import Union
 
 import chess
 import chess.engine
 
 from agents.agent import ChessAgent
-from utils.utils import State, score_to_float
 from agents.search_agents import ChessEvaluator
+from utils.utils import State, score_to_float
+
 
 class GeneralQuiescenceAgent(ChessAgent):
     def __init__(
@@ -112,6 +112,12 @@ class GeneralQuiescenceAgent(ChessAgent):
         # update depth
         depth -= 1
 
+        # test null move
+        null_move_score = self.evaluator.getEvaluation(state)
+        if score_to_float(null_move_score.relative, chess.WHITE) >= beta:
+            return chess.engine.PovScore(null_move_score.relative, chess.WHITE), None
+        alpha = max(alpha, score_to_float(null_move_score.relative, chess.WHITE))
+
         # Collect legal moves and successor states
         legalMoves = state.board.generate_legal_moves()
         volatile_moves = []
@@ -137,9 +143,8 @@ class GeneralQuiescenceAgent(ChessAgent):
                 break
             alpha = max(alpha, score_to_float(max(scores), score.turn))
         bestScore: chess.engine.Score = max(scores)
-        null_move_score = self.evaluator.getEvaluation(state).relative
-        if bestScore < null_move_score:
-            return chess.engine.PovScore(null_move_score, chess.WHITE), None
+        if bestScore < null_move_score.relative:
+            return chess.engine.PovScore(null_move_score.relative, chess.WHITE), None
         bestIndices = [
             index for index in range(len(scores)) if scores[index] == bestScore
         ]
@@ -159,6 +164,12 @@ class GeneralQuiescenceAgent(ChessAgent):
 
         # update depth
         depth -= 1
+
+        # test null move score
+        null_move_score = self.evaluator.getEvaluation(state)
+        if score_to_float(null_move_score.relative, chess.BLACK) <= alpha:
+            return chess.engine.PovScore(null_move_score.relative, chess.BLACK), None
+        beta = min(beta, score_to_float(null_move_score.relative, chess.WHITE))
 
         # Collect legal moves and successor states
         legalMoves = state.board.generate_legal_moves()
@@ -185,9 +196,8 @@ class GeneralQuiescenceAgent(ChessAgent):
                 break
             beta = min(beta, score_to_float(min(scores), score.turn))
         bestScore: chess.engine.Score = min(scores)
-        null_move_score = self.evaluator.getEvaluation(state).relative
-        if bestScore > null_move_score:
-            return chess.engine.PovScore(null_move_score, chess.BLACK), None
+        if bestScore > null_move_score.relative:
+            return chess.engine.PovScore(null_move_score.relative, chess.BLACK), None
         bestIndices = [
             index for index in range(len(scores)) if scores[index] == bestScore
         ]
