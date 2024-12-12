@@ -1,3 +1,4 @@
+import chess.engine
 import fire
 from tqdm import tqdm
 
@@ -32,29 +33,25 @@ def eval(agent: agent.ChessAgent, use_test=False) -> float:
 
 
 def run_eval():
-    # model = agent.StockfishAgent()
-    model = search_agents.MinimaxAgent(
+    # model = agent.StockfishAgent(move_depth_limit=25)
+    """model = search_agents.MinimaxAgent(
         search_agents.SimpleEvaluator(), move_depth_limit=1
-    )
+    )"""
     """model = search_agents.AlphaBetaAgent(
         evaluator=search_agents.StockfishEvaluator(
-            limit=chess.engine.Limit(time=0.01, depth=0)
+            limit=chess.engine.Limit(time=0.01, depth=2)
         ),
         move_depth_limit=2,
     )"""
-    eval(model)
-    model.quit()
-    model = search_agents.AlphaBetaAgent(
+    """model = search_agents.AlphaBetaAgent(
         evaluator=search_agents.SimpleEvaluator(),
-        move_depth_limit=1,
-    )
-    """model = search_agents.QuiescenceAgent(
-        evaluator=search_agents.StockfishEvaluator(
-            limit=chess.engine.Limit(time=0.05, depth=0)
-        ),
-        move_depth_limit=1,
-        quiescence_depth_limit=2,
+        move_depth_limit=3,
     )"""
+    model = search_agents.BruteQuiescenceAgent(
+        evaluator=search_agents.SimpleEvaluator(),
+        move_depth_limit=2,
+        quiescence_depth_limit=3,
+    )
     eval(model)
     model.quit()
 

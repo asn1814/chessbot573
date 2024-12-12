@@ -41,8 +41,8 @@ class ChessAgent:
 
 
 class StockfishAgent(ChessAgent):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, move_time_limit: float = 0.1, move_depth_limit: int = 2):
+        super().__init__(move_time_limit, move_depth_limit)
         self.engine = chess.engine.SimpleEngine.popen_uci(constants.STOCKFISH_PATH)
 
     def getMove(self, state) -> Union[chess.Move, None]:

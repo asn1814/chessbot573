@@ -199,7 +199,7 @@ class AlphaBetaAgent(ChessAgent):
         chosenIndex = bestIndices[0]
 
         return (
-            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.WHITE),
+            chess.engine.PovScore(bestScore, chess.WHITE),
             moves[chosenIndex],
         )
 
@@ -226,16 +226,16 @@ class AlphaBetaAgent(ChessAgent):
             state.board.pop()
             scores.append(score.relative)
             if score_to_float(score.relative, score.turn) < alpha:
-                pass
+                break
             beta = min(beta, score_to_float(min(scores), score.turn))
-        bestScore: float = min(scores)
+        bestScore: chess.engine.Score = min(scores)
         bestIndices = [
             index for index in range(len(scores)) if scores[index] == bestScore
         ]
         chosenIndex = bestIndices[0]
 
         return (
-            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.BLACK),
+            chess.engine.PovScore(bestScore, chess.BLACK),
             moves[chosenIndex],
         )
 
@@ -254,7 +254,7 @@ class AlphaBetaAgent(ChessAgent):
         self.evaluator.quit()
 
 
-class QuiescenceAgent(ChessAgent):
+class BruteQuiescenceAgent(ChessAgent):
     def __init__(
         self,
         evaluator: ChessEvaluator,
@@ -273,14 +273,10 @@ class QuiescenceAgent(ChessAgent):
         if state.board.is_game_over():
             return self.evaluator.getEvaluation(state), None
         if depth <= 0:
-            quiescence_score, _ = self.quiescence_max_value(
-                state, self.quiescence_depth_limit, float("-inf"), float("inf")
+            quiescence_score, move = self.quiescence_max_value(
+                state, self.quiescence_depth_limit, alpha, beta
             )
-            curr_score = self.evaluator.getEvaluation(state)
-            if quiescence_score.relative <= curr_score.relative:
-                return curr_score, None
-            else:
-                return quiescence_score, None
+            return quiescence_score, move
 
         # update depth
         depth -= 1
@@ -296,10 +292,10 @@ class QuiescenceAgent(ChessAgent):
             state.board.push(action)
             score, move = self.min_value(state, depth, alpha, beta)
             state.board.pop()
-            scores.append(score_to_float(score))
-            if score_to_float(score) > beta:
+            scores.append(score.relative)
+            if score_to_float(score.relative, score.turn) > beta:
                 break
-            alpha = max(alpha, max(scores))
+            alpha = max(alpha, score_to_float(max(scores), score.turn))
         bestScore: chess.engine.Score = max(scores)
         bestIndices = [
             index for index in range(len(scores)) if scores[index] == bestScore
@@ -307,7 +303,7 @@ class QuiescenceAgent(ChessAgent):
         chosenIndex = bestIndices[0]
 
         return (
-            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.WHITE),
+            chess.engine.PovScore(bestScore, chess.WHITE),
             moves[chosenIndex],
         )
 
@@ -318,14 +314,10 @@ class QuiescenceAgent(ChessAgent):
         if state.board.is_game_over():
             return self.evaluator.getEvaluation(state), None
         if depth <= 0:
-            quiescence_score, _ = self.quiescence_min_value(
-                state, self.quiescence_depth_limit, float("-inf"), float("inf")
+            quiescence_score, move = self.quiescence_min_value(
+                state, self.quiescence_depth_limit, alpha, beta
             )
-            curr_score = self.evaluator.getEvaluation(state)
-            if quiescence_score.relative >= curr_score.relative:
-                return curr_score, None
-            else:
-                return quiescence_score, None
+            return quiescence_score, move
 
         # update depth
         depth -= 1
@@ -341,10 +333,10 @@ class QuiescenceAgent(ChessAgent):
             state.board.push(action)
             score, move = self.max_value(state, depth, alpha, beta)
             state.board.pop()
-            scores.append(score_to_float(score))
-            if score_to_float(score) < alpha:
+            scores.append(score.relative)
+            if score_to_float(score.relative, score.turn) < alpha:
                 break
-            beta = min(beta, min(scores))
+            beta = min(beta, score_to_float(min(scores), score.turn))
         bestScore: chess.engine.Score = min(scores)
         bestIndices = [
             index for index in range(len(scores)) if scores[index] == bestScore
@@ -352,7 +344,7 @@ class QuiescenceAgent(ChessAgent):
         chosenIndex = bestIndices[0]
 
         return (
-            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.BLACK),
+            chess.engine.PovScore(bestScore, chess.BLACK),
             moves[chosenIndex],
         )
 
@@ -369,11 +361,14 @@ class QuiescenceAgent(ChessAgent):
         # Collect legal moves and successor states
         legalMoves = state.board.generate_legal_moves()
         volatile_moves = []
-        for move in legalMoves:
-            if state.board.gives_check(move) or state.board.is_capture(move):
-                volatile_moves.append(move)
-        if len(volatile_moves) == 0:
-            return self.evaluator.getEvaluation(state), None
+        if state.board.is_check():
+            volatile_moves = legalMoves
+        else:
+            for move in legalMoves:
+                if state.board.gives_check(move) or state.board.is_capture(move):
+                    volatile_moves.append(move)
+            if len(volatile_moves) == 0:
+                return self.evaluator.getEvaluation(state), None
 
         # Choose one of the best actions
         scores: list[float] = []
@@ -383,10 +378,10 @@ class QuiescenceAgent(ChessAgent):
             state.board.push(action)
             score, move = self.quiescence_min_value(state, depth, alpha, beta)
             state.board.pop()
-            scores.append(score_to_float(score))
-            if score_to_float(score) > beta:
+            scores.append(score.relative)
+            if score_to_float(score.relative, score.turn) > beta:
                 break
-            alpha = max(alpha, max(scores))
+            alpha = max(alpha, score_to_float(max(scores), score.turn))
         bestScore: chess.engine.Score = max(scores)
         bestIndices = [
             index for index in range(len(scores)) if scores[index] == bestScore
@@ -394,7 +389,7 @@ class QuiescenceAgent(ChessAgent):
         chosenIndex = bestIndices[0]
 
         return (
-            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.WHITE),
+            chess.engine.PovScore(bestScore, chess.WHITE),
             moves[chosenIndex],
         )
 
@@ -411,11 +406,14 @@ class QuiescenceAgent(ChessAgent):
         # Collect legal moves and successor states
         legalMoves = state.board.generate_legal_moves()
         volatile_moves = []
-        for move in legalMoves:
-            if state.board.gives_check(move) or state.board.is_capture(move):
-                volatile_moves.append(move)
-        if len(volatile_moves) == 0:
-            return self.evaluator.getEvaluation(state), None
+        if state.board.is_check():
+            volatile_moves = legalMoves
+        else:
+            for move in legalMoves:
+                if state.board.gives_check(move) or state.board.is_capture(move):
+                    volatile_moves.append(move)
+            if len(volatile_moves) == 0:
+                return self.evaluator.getEvaluation(state), None
 
         # Choose one of the best actions
         scores = []
@@ -425,10 +423,10 @@ class QuiescenceAgent(ChessAgent):
             state.board.push(action)
             score, move = self.quiescence_max_value(state, depth, alpha, beta)
             state.board.pop()
-            scores.append(score_to_float(score))
-            if score_to_float(score) < alpha:
+            scores.append(score.relative)
+            if score_to_float(score.relative, score.turn) < alpha:
                 break
-            beta = min(beta, min(scores))
+            beta = min(beta, score_to_float(min(scores), score.turn))
         bestScore: chess.engine.Score = min(scores)
         bestIndices = [
             index for index in range(len(scores)) if scores[index] == bestScore
@@ -436,7 +434,7 @@ class QuiescenceAgent(ChessAgent):
         chosenIndex = bestIndices[0]
 
         return (
-            chess.engine.PovScore(chess.engine.Cp(bestScore), chess.BLACK),
+            chess.engine.PovScore(bestScore, chess.BLACK),
             moves[chosenIndex],
         )
 
