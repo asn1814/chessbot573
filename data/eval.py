@@ -54,16 +54,16 @@ def run_eval():
         move_depth_limit=2,
         quiescence_depth_limit=3,
     )"""
-    """model = GeneralQuiescenceAgent(
+    model = GeneralQuiescenceAgent(
         evaluator=search_agents.SimpleEvaluator(),
         move_depth_limit=1,
-        quiescence_depth_limit=5,
-    )"""
-    model = DPGeneralQuiescenceAgent(
+        quiescence_depth_limit=7,
+    )
+    """model = DPGeneralQuiescenceAgent(
         evaluator=search_agents.SimpleEvaluator(),
         move_depth_limit=2,
         quiescence_depth_limit=3,
-    )
+    )"""
     eval(model)
     model.quit()
 
