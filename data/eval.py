@@ -4,6 +4,7 @@ from tqdm import tqdm
 
 import agents.agent as agent
 import agents.search_agents as search_agents
+from agents.general_quiescence_agent import GeneralQuiescenceAgent
 import constants
 from data.dataset import get_splits
 from utils.utils import State
@@ -47,7 +48,12 @@ def run_eval():
         evaluator=search_agents.SimpleEvaluator(),
         move_depth_limit=3,
     )"""
-    model = search_agents.BruteQuiescenceAgent(
+    """model = search_agents.BruteQuiescenceAgent(
+        evaluator=search_agents.SimpleEvaluator(),
+        move_depth_limit=2,
+        quiescence_depth_limit=3,
+    )"""
+    model = GeneralQuiescenceAgent(
         evaluator=search_agents.SimpleEvaluator(),
         move_depth_limit=2,
         quiescence_depth_limit=3,
