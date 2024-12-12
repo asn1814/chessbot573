@@ -188,10 +188,10 @@ class AlphaBetaAgent(ChessAgent):
             state.board.push(action)
             score, move = self.min_value(state, depth, alpha, beta)
             state.board.pop()
-            scores.append(score_to_float(score))
-            if score_to_float(score) > beta:
+            scores.append(score.relative)
+            if score_to_float(score.relative, score.turn) > beta:
                 break
-            alpha = max(alpha, max(scores))
+            alpha = max(alpha, score_to_float(max(scores), score.turn))
         bestScore: chess.engine.Score = max(scores)
         bestIndices = [
             index for index in range(len(scores)) if scores[index] == bestScore
@@ -224,11 +224,11 @@ class AlphaBetaAgent(ChessAgent):
             state.board.push(action)
             score, move = self.max_value(state, depth, alpha, beta)
             state.board.pop()
-            scores.append(score_to_float(score))
-            if score_to_float(score) < alpha:
-                break
-            beta = min(beta, min(scores))
-        bestScore: chess.engine.Score = min(scores)
+            scores.append(score.relative)
+            if score_to_float(score.relative, score.turn) < alpha:
+                pass
+            beta = min(beta, score_to_float(min(scores), score.turn))
+        bestScore: float = min(scores)
         bestIndices = [
             index for index in range(len(scores)) if scores[index] == bestScore
         ]
